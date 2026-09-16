@@ -16,9 +16,11 @@ import java.util.Map;
 public class SttService {
 
     private final WebClient webClient;
+    private final StatsService statsService;
 
-    public SttService(WebClient webClient) {
+    public SttService(WebClient webClient, StatsService statsService) {
         this.webClient = webClient;
+        this.statsService = statsService;
     }
 
     public String transcribe(MultipartFile audioFile) throws IOException {
@@ -44,6 +46,18 @@ public class SttService {
                 .retrieve()
                 .bodyToMono(new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {})
                 .block();
+
+        Object usageObj = response.get("usage");
+        if (usageObj instanceof Map<?, ?> usage) {
+            Object inputTokens = usage.get("input_tokens");
+            Object outputTokens = usage.get("output_tokens");
+
+            long input = inputTokens instanceof Number ? ((Number) inputTokens).longValue() : 0;
+            long output = outputTokens instanceof Number ? ((Number) outputTokens).longValue() : 0;
+
+            statsService.addUsage(input, output);
+        }
+
         return (String) response.get("text");
     }
 }
