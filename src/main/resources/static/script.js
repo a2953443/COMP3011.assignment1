@@ -44,5 +44,30 @@ function stopRecording() {
     isRecording = false;
 
     recordButton.textContent = 'Start Recording';
-    statusText.textContent = 'Idle';
+	statusText.textContent = 'Processing...'; // letting user know audio is being processed
+
+    // mediaRecorder.onstop starts once the recorder has fully finished and all data is available
+    mediaRecorder.onstop = async () => {
+        // Combine all the captured audio chunks into a audio file
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+
+        // FormData packages the audio in the multipart format the backend expects
+        const formData = new FormData();
+        formData.append('audio', audioBlob); // "audio" key must match @RequestParam("audio") in the Java controller
+
+        // Send the audio to backend endpoint and wait for the response
+        const response = await fetch('/api/transcribe', {
+            method: 'POST',
+            body: formData
+        });
+
+        // Parse the JSON response body
+        const data = await response.json();
+
+        // Display the returned text on the page
+        document.getElementById('transcript').textContent = data.text;
+
+        // Recording is complete now reset status so the user can record again
+        statusText.textContent = 'Idle';
+	};
 }
