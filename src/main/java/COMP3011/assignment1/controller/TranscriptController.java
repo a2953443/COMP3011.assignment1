@@ -1,18 +1,26 @@
 package COMP3011.assignment1.controller;
 
+import COMP3011.assignment1.service.SttService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile; // handle audio file
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class TranscriptController {
 
-    @PostMapping("/transcribe") // handles POST requests to /api/transcribe
-    public Map<String, String> transcribe(@RequestParam("audio") MultipartFile audioFile) {
-        // audioFile now holds the uploaded audio data, matched by the "audio" key used in the frontend's FormData
+    private final SttService sttService;
 
-        // Return a fake response for now - Spring automatically converts this Map into JSON
-        return Map.of("text", "This is a fake transcription for testing.");
+    // Constructor injection - Spring supplies the SttService bean
+    public TranscriptController(SttService sttService) {
+        this.sttService = sttService;
+    }
+
+    @PostMapping("/transcribe")
+    public Map<String, String> transcribe(@RequestParam("audio") MultipartFile audioFile) throws IOException {
+        String text = sttService.transcribe(audioFile);
+        return Map.of("text", text);
     }
 }
